@@ -1,5 +1,9 @@
 library(tidyverse)
 
+setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
+             "Omics/Metagenome/rRNA/16S_From_All_Bins/MQHQ_Picrust2/",
+             "MQHQ_Picrust2/"))
+
 #Data
 
 dbcan <- read_tsv("Data/dbcan_db_out_sorted.tsv")

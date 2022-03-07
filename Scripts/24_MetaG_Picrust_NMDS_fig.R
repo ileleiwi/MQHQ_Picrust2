@@ -3,7 +3,8 @@ library(vegan)
 library(ggtext)
 
 setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
-             "Omics/Metagenome/rRNA/16S_From_All_Bins/ASVs_to_Bins_MMSEQS2/"))
+             "Omics/Metagenome/rRNA/16S_From_All_Bins/MQHQ_Picrust2/",
+             "MQHQ_Picrust2/"))
 ##Data
 nmds_plot_df <- read_tsv("Clean_Data/nmds_plot_df.tsv")
 

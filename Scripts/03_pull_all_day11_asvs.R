@@ -1,8 +1,9 @@
 library(tidyverse)
 library(phylotools)
 
-setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/Omics/",
-      "Metagenome/rRNA/16S_From_All_Bins/ASVs_to_Bins_MMSEQS2"))
+setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
+             "Omics/Metagenome/rRNA/16S_From_All_Bins/MQHQ_Picrust2/",
+             "MQHQ_Picrust2/"))
 
 #Get fasta of unique ASVs from day11 for input into
 #Picrust2 and filter feature table to include only those asvs
