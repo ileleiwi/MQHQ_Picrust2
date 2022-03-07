@@ -81,16 +81,9 @@ picrust_dbcan_long_norm <- picrust_dbcan_long %>%
                                     total_copy_number)) %>%
   select(bin.id, dbcan_column, total_copy_number)
 
-test <- picrust_dbcan_long_norm %>%
-  ungroup() %>%
-  slice(7)
-
-test2 <- picrust_dbcan_long_norm %>%
-  ungroup() %>%
-  slice(15)
 
 #function to turn string into character vector based on separator
-str_to_vect <- function(string, sep = ","){
+str_to_vect <- function(string, sep = ", "){
   string_list <- strsplit(string, split = sep)
   return(unlist(string_list))
 }
@@ -104,13 +97,6 @@ pullVal <- function(dataframe, column = "total_copy_number", row){
   return(y)
 }
 
-#check if colname already exists
-colNameCheck <- function(dataframe1, dataframe2){
-  x <- colnames(dataframe1)
-  y <- colnames(dataframe2)
-  
-  
-}
 
 #build wider df from a tibble row
 buildWide <- function(dataframe_row){
@@ -135,14 +121,29 @@ combineRows <- function()
 
 
 
+test <- picrust_dbcan_long_norm %>%
+  ungroup() %>%
+  slice(17)
+
+test2 <- picrust_dbcan_long_norm %>%
+  ungroup() %>%
+  slice(18)
 
 
 test3 <- buildWide(test)
 test3.1 <- buildWide(test2)
-test3.1$CE1 <- 0
+
+
+cols_3 <- colnames(test3)
+cols_3.1 <- colnames(test3.1)
+cols_3
+cols_3.1
+intersect(cols_3, cols_3.1)
+setdiff(cols_3, cols_3.1)
+setdiff(cols_3.1, cols_3)
 
 test3.2 <- bind_rows(test3, test3.1)
-
+colnames(test3.2)
 ##DRAM KO gene counts
 #summarize to total copy number for each KO and bin
 #filter to include only MQHQ bins that match to an ASV
