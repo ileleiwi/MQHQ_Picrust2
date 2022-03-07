@@ -72,14 +72,16 @@ picrust_ko_long_norm <- picrust_ko_long %>%
   mutate(total_copy_number = ifelse(total_copy_number > 0,
                                     total_copy_number/asvs_per_bin,
                                     total_copy_number)) %>%
-  select(bin.id, gene_id, total_copy_number)
+  select(bin.id, gene_id, total_copy_number) %>%
+  ungroup()
 
 picrust_dbcan_long_norm <- picrust_dbcan_long %>%
   left_join(asv_per_bin, by = "bin.id") %>%
   mutate(total_copy_number = ifelse(total_copy_number > 0,
                                     total_copy_number/asvs_per_bin,
                                     total_copy_number)) %>%
-  select(bin.id, dbcan_column, total_copy_number)
+  select(bin.id, dbcan_column, total_copy_number) %>%
+  ungroup()
 
 
 #function to turn string into character vector based on separator
@@ -89,9 +91,8 @@ str_to_vect <- function(string, sep = ", "){
 }
 
 #pull value from df
-pullVal <- function(dataframe, column = "total_copy_number", row){
+pullVal <- function(dataframe, column = "total_copy_number", row = 1){
   y <- dataframe %>%
-    ungroup() %>%
     slice(row) %>%
     pull(column)
   return(y)
@@ -99,51 +100,46 @@ pullVal <- function(dataframe, column = "total_copy_number", row){
 
 
 #build wider df from a tibble row
-buildWide <- function(dataframe_row){
-  df_out <- dataframe_row
+buildWide <- function(dataframe){
+  df_out <- dataframe
   
-  vect <- pullVal(dataframe_row, column = "dbcan_column", row = 1)
+  vect <- pullVal(dataframe, column = "dbcan_column")
   string <- str_to_vect(vect)
-  copy_num <- pullVal(dataframe_row, row = 1)
+  copy_num <- pullVal(dataframe)
   
   temp_df <- data.frame(matrix(data = copy_num, 
                                nrow = 1,
                                ncol = length(string)))
   colnames(temp_df) <- string
-  
-  temp_df <- temp_df[,order(colnames(temp_df))]
-
+ 
   return(cbind(df_out, temp_df))
 }
 
+test3 <- buildWide(test[1,])
+
+
 #combine wide rows with different column names
-combineRows <- function()
+combineRows <- function(dataframe){
+ 
+  for(i in 1:nrow(dataframe)){
+    if(i == 1){
+    working_df <- buildWide(dataframe[i,])
+    }else{
+    new_row <- dataframe %>%
+      slice(i)
+    row_to_bind <- buildWide(new_row)
+    working_df <- bind_rows(working_df, row_to_bind)
+    }
+  }
+  return(working_df)
+}
 
 
 
-test <- picrust_dbcan_long_norm %>%
-  ungroup() %>%
-  slice(17)
-
-test2 <- picrust_dbcan_long_norm %>%
-  ungroup() %>%
-  slice(18)
+test_out <- combineRows(test)
 
 
-test3 <- buildWide(test)
-test3.1 <- buildWide(test2)
 
-
-cols_3 <- colnames(test3)
-cols_3.1 <- colnames(test3.1)
-cols_3
-cols_3.1
-intersect(cols_3, cols_3.1)
-setdiff(cols_3, cols_3.1)
-setdiff(cols_3.1, cols_3)
-
-test3.2 <- bind_rows(test3, test3.1)
-colnames(test3.2)
 ##DRAM KO gene counts
 #summarize to total copy number for each KO and bin
 #filter to include only MQHQ bins that match to an ASV
