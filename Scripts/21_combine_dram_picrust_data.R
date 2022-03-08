@@ -20,7 +20,7 @@ metab_summary_dedup <- metab_summary %>%
 #picrust2 predicted KO and EC counts per ASV
 #pictrust2 was run on uniuqe ASV sequences from ASV_bin match
 picrust_ko <- read_tsv("Data/KO_predicted.tsv")
-picrust_ec <- read_tsv("Data/EC_predicted.tsv")
+picrust_ec_dbcan <- read_tsv("Clean_Data/picr_ec_dbcan.tsv")
 
 #ASV to Bins match statistics
 asv_bins <- read_tsv("Data/match_statistics.tsv") %>%
@@ -59,13 +59,10 @@ picrust_ko_long <- picrust_ko %>%
   arrange(bin.id, gene_id)
 
 
-picrust_ec_long <- picrust_ec %>%
-  pivot_longer(cols = starts_with("EC"),
-               values_to = "copy_number",
-               names_to = "gene_id") %>%
+picrust_dbcan_long <- picrust_ec_dbcan %>%
   left_join(asv_bins, by = c("sequence" = "ASV_header")) %>%
-  group_by(bin.id, gene_id) %>%
-  summarise(total_copy_number = sum(copy_number)) %>%
+  group_by(bin.id, dbcan_column) %>%
+  summarise(total_copy_number = sum(count)) %>%
   filter(bin.id %in% asv_bins_bin.id)
 
 
@@ -74,38 +71,120 @@ picrust_ko_long_norm <- picrust_ko_long %>%
   left_join(asv_per_bin, by = "bin.id") %>%
   mutate(total_copy_number = ifelse(total_copy_number > 0,
                                     total_copy_number/asvs_per_bin,
-                                    total_copy_number))
+                                    total_copy_number)) %>%
+  select(bin.id, gene_id, total_copy_number) %>%
+  ungroup() %>%
+  rename("counts" = "total_copy_number")
 
-picrust_ec_long_norm <- picrust_ec_long %>%
+picrust_dbcan_long_norm <- picrust_dbcan_long %>%
   left_join(asv_per_bin, by = "bin.id") %>%
   mutate(total_copy_number = ifelse(total_copy_number > 0,
                                     total_copy_number/asvs_per_bin,
-                                    total_copy_number))
+                                    total_copy_number)) %>%
+  select(bin.id, dbcan_column, total_copy_number) %>%
+  ungroup()
 
-##DRAM KO gene counts
-#summarize to total copy number for each KO and bin
+
+#function to turn string into character vector based on separator
+str_to_vect <- function(string, sep = ", "){
+  string_list <- strsplit(string, split = sep)
+  return(unlist(string_list))
+}
+
+#pull value from df
+pullVal <- function(dataframe, column = "total_copy_number", row = 1){
+  y <- dataframe %>%
+    slice(row) %>%
+    pull(column)
+  return(y)
+}
+
+
+#build wider df from a tibble row
+buildWide <- function(dataframe){
+  df_out <- dataframe
+  
+  vect <- pullVal(dataframe, column = "dbcan_column")
+  string <- str_to_vect(vect)
+  copy_num <- pullVal(dataframe)
+  
+  temp_df <- data.frame(matrix(data = copy_num, 
+                               nrow = 1,
+                               ncol = length(string)))
+  colnames(temp_df) <- string
+ 
+  return(cbind(df_out, temp_df))
+}
+
+
+#combine wide rows with different column names
+combineRows <- function(dataframe){
+ 
+  for(i in 1:nrow(dataframe)){
+    if(i == 1){
+    working_df <- buildWide(dataframe[i,])
+    }else{
+    new_row <- dataframe %>%
+      slice(i)
+    row_to_bind <- buildWide(new_row)
+    working_df <- bind_rows(working_df, row_to_bind)
+    }
+  }
+  return(working_df)
+}
+
+#make a column with count data for each dbcan id in each row
+picrust_dbcan_wide <- combineRows(picrust_dbcan_long_norm)
+
+#transform df to long format and keep the highest count value for
+#each bin:dbcan_id pair when there are duplicate dbcan_ids for a bin
+picrust_dbcan_single_ids <- picrust_dbcan_wide %>%
+  pivot_longer(values_to = "counts",
+               names_to = 'gene_id',
+               cols = 4:205) %>%
+  replace_na(list(counts = 0)) %>%
+  group_by(bin.id, gene_id) %>%
+  summarise(max_count = max(counts)) %>%
+  rename("counts" = "max_count")
+
+
+#Combine picrust KO and picrust ec/dbcanid data
+
+picrust_ko_dbcan <- rbind(picrust_ko_long_norm, picrust_dbcan_single_ids) 
+  
+
+##DRAM KO and Cazy gene counts
+#summarize to total copy number for each gene and bin
 #filter to include only MQHQ bins that match to an ASV
 
 metab_summary_long <- metab_summary_dedup %>%
   select(SheetName, gene_id, gene_description, module, header, subheader,
          all_of(asv_bins_bin.id)) %>%
   pivot_longer(cols = c(contains("bin"), contains("KE")),
-               values_to = "copy_number",
+               values_to = "counts",
                names_to = "bin.id") %>%
-  filter(str_starts(gene_id, "K")) %>%
-  select(bin.id, gene_id, copy_number) %>%
-  rename("total_copy_number" = "copy_number") %>%
+  filter(str_starts(gene_id, "K") | header == "CAZY") %>%
+  select(bin.id, gene_id, counts) %>%
   arrange(bin.id, gene_id)
-  
+
 
 #combine DRAM and picrust dataframes
-picr_dram_ko <- picrust_ko_long_norm %>%
+picr_dram <- picrust_ko_dbcan %>%
   left_join(metab_summary_long, 
             by = c("bin.id", "gene_id"), 
             suffix = c("_picrust", "_dram"))
 
 #fill NA's in total_copy_number_dram with 0's
-picr_dram_ko <- picr_dram_ko %>%
-  mutate(total_copy_number_dram = replace_na(total_copy_number_dram, 0)) 
+picr_dram <- picr_dram %>%
+  mutate(counts_dram = replace_na(counts_dram, 0)) 
 
-write_tsv(picr_dram_ko, "Clean_Data/picr_dram_ko.tsv")
+#write out datframe
+write_tsv(picr_dram, "Clean_Data/picr_dram.tsv")
+
+
+
+
+
+
+
+
