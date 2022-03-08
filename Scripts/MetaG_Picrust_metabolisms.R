@@ -7,7 +7,7 @@ setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
 
 
 #Data 
-picr_dram <- read_tsv("Clean_Data/picr_dram_ko.tsv")
+picr_dram <- read_tsv("Clean_Data/picr_dram.tsv")
 
 ko_rules <- read_xlsx("Data/KOs_for_functions.xlsx") %>%
   select(1:3)
