@@ -6,28 +6,28 @@ setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
              "MQHQ_Picrust2/"))
 
 #Data
-picr_dram_ko <- read_tsv("Clean_Data/picr_dram_ko.tsv")
+picr_dram <- read_tsv("Clean_Data/picr_dram.tsv")
 
 #remove functions with 0 in both picrust and dram
-picr_dram_ko <- picr_dram_ko %>%
-  filter(total_copy_number_picrust > 0 & total_copy_number_dram > 0)
+picr_dram <- picr_dram %>%
+  filter(counts_picrust > 0 & counts_dram > 0)
 
 ##Correlations
-pcor <- cor(picr_dram_ko$total_copy_number_dram, 
-            picr_dram_ko$total_copy_number_picrust,
+pcor <- cor(picr_dram$counts_dram, 
+            picr_dram$counts_picrust,
             method = "pearson")
 
-scor <- cor(picr_dram_ko$total_copy_number_dram, 
-            picr_dram_ko$total_copy_number_picrust,
+scor <- cor(picr_dram$counts_dram, 
+            picr_dram$counts_picrust,
             method = "spearman")
 
 
 #####do this with function groups
-pdk_mtx <- picr_dram_ko %>%
-  select(starts_with("Total")) %>%
+pdk_mtx <- picr_dram %>%
+  select(starts_with("counts")) %>%
   as.matrix() %>%
   t()
-colnames(pdk_mtx) <- picr_dram_ko$gene_id
+colnames(pdk_mtx) <- picr_dram$gene_id
 
 pdk_mtx %>% 
   ggcorr(method = c("everything", "pearson")) 

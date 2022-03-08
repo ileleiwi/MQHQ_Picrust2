@@ -5,14 +5,13 @@ setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
              "MQHQ_Picrust2/"))
 
 #Data 
-picr_dram <- read_tsv("Clean_Data/picr_dram.tsv") %>%
-  filter(total_copy_number_picrust > 0 & total_copy_number_dram > 0)
+picr_dram <- read_tsv("Clean_Data/picr_dram.tsv") 
 
 picr_dram_present_absent <- picr_dram %>%
-  mutate(picrust_pa = ifelse(total_copy_number_picrust > 0,
+  mutate(picrust_pa = ifelse(counts_picrust > 0,
                               yes = 1,
                               no = 0),
-         dram_pa = ifelse(total_copy_number_dram > 0,
+         dram_pa = ifelse(counts_dram > 0,
                           yes = 1,
                           no = 0))
 

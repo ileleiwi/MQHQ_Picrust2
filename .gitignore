@@ -9,3 +9,4 @@ Data/rules.tsv
 Data/feature_table_r1-r5.tsv
 MQHQ_Picrust2.Rproj
 .Rproj.user
+.DS_Store

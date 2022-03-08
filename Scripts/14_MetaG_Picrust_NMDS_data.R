@@ -7,16 +7,16 @@ setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
              "MQHQ_Picrust2/"))
 
 #Data
-picr_dram_ko <- read_tsv("Clean_Data/picr_dram_ko.tsv")
+picr_dram <- read_tsv("Clean_Data/picr_dram.tsv")
 
 #remove functions with 0 in both picrust and dram
-picr_dram_ko <- picr_dram_ko %>%
-  filter(total_copy_number_picrust > 0 & total_copy_number_dram > 0)
+picr_dram <- picr_dram %>%
+  filter(counts_picrust > 0 & counts_dram > 0)
 
 #dataframe for nmds
 picr_dram_long <- picr_dram %>%
-  pivot_longer(cols = starts_with("total"),
-               values_to = "total_copy_number",
+  pivot_longer(cols = starts_with("counts"),
+               values_to = "counts",
                names_to = "method") %>%
   mutate(method = ifelse(str_detect(method, "dram"),
                          "DRAM",
@@ -26,9 +26,9 @@ picr_dram_long <- picr_dram %>%
 
 picr_dram_matrix <- picr_dram_long %>%
   ungroup() %>%
-  select(unique_name, bin.id, total_copy_number) %>%
+  select(unique_name, bin.id, counts) %>%
   pivot_wider(names_from = "unique_name",
-              values_from = "total_copy_number") %>%
+              values_from = "counts") %>%
   mutate(
     across(everything(), ~replace_na(.x, 0))
   ) %>%
