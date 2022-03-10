@@ -20,6 +20,7 @@ metab_summary_dedup <- metab_summary %>%
 #picrust2 predicted KO and EC counts per ASV
 #pictrust2 was run on uniuqe ASV sequences from ASV_bin match
 picrust_ko <- read_tsv("Data/KO_predicted.tsv")
+picrust_ec <- read_tsv("Data/EC_predicted.tsv")
 picrust_ec_dbcan <- read_tsv("Clean_Data/picr_ec_dbcan.tsv")
 
 #ASV to Bins match statistics
@@ -58,6 +59,16 @@ picrust_ko_long <- picrust_ko %>%
   filter(bin.id %in% asv_bins_bin.id) %>%
   arrange(bin.id, gene_id)
 
+picrust_ec_long <- picrust_ec %>%
+  pivot_longer(cols = starts_with("EC"),
+               values_to = "copy_number",
+               names_to = "gene_id") %>%
+  left_join(asv_bins, by = c("sequence" = "ASV_header")) %>%
+  group_by(bin.id, gene_id) %>%
+  summarise(total_copy_number = sum(copy_number)) %>%
+  filter(bin.id %in% asv_bins_bin.id) %>%
+  arrange(bin.id, gene_id)
+
 
 picrust_dbcan_long <- picrust_ec_dbcan %>%
   left_join(asv_bins, by = c("sequence" = "ASV_header")) %>%
@@ -75,6 +86,17 @@ picrust_ko_long_norm <- picrust_ko_long %>%
   select(bin.id, gene_id, total_copy_number) %>%
   ungroup() %>%
   rename("counts" = "total_copy_number")
+
+picrust_ec_long_norm <- picrust_ec_long %>%
+  left_join(asv_per_bin, by = "bin.id") %>%
+  mutate(total_copy_number = ifelse(total_copy_number > 0,
+                                    total_copy_number/asvs_per_bin,
+                                    total_copy_number)) %>%
+  select(bin.id, gene_id, total_copy_number) %>%
+  ungroup() %>%
+  rename("counts" = "total_copy_number")
+
+write_tsv(picrust_ec_long_norm, "Clean_Data/picrust_ec_mqhq_match.tsv")
 
 picrust_dbcan_long_norm <- picrust_dbcan_long %>%
   left_join(asv_per_bin, by = "bin.id") %>%

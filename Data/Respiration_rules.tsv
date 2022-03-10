@@ -1,28 +1,27 @@
 name	parent	child
 Sulfate Reduction	Sulfate Reduction	Dsr
-	Dsr	K11180|EC1.8.99.5|K11181|EC1.8.99.5
-	Asr	K00380|EC1.8.1.2|K00381|EC1.8.1.2|K00392|EC1.8.7.1
-Fumarate Reduction	Fumarate Reduction	atleast:1:FumarateReductionParts
-	Fumarate Reduction Parts	"K00244,K00245,K00246,K00247"
+Sulfate Reduction	Dsr	K11180|EC1.8.99.5|K11181|EC1.8.99.5
+Sulfate Reduction	Asr	K00380|EC1.8.1.2|K00381|EC1.8.1.2|K00392|EC1.8.7.1
+Fumarate Reduction	Fumarate Reduction	K00244|K00245|K00246|K00247
 Aerobic	Aerobic	[percent50CytochromeCOxidase|percent50CytochromeAa3600MenaquinolOxidase|percent50CytochromeOUbiquinolOxidase]&ETC50
-	percent50CytochromeCOxidase	percent:50:CytochromeCOxidase
-	percent50CytochromeOUbiquinolOxidase	percent:50:CytochromeOUbiquinolOxidase
-	percent50CytochromeAa3600MenaquinolOxidase	percent:50:CytochromeAa3600MenaquinolOxidase
-	CytochromeCOxidase	"K02275,K02274,K02276|K15408,K02277"
-	CytochromeAa3600MenaquinolOxidase	"K02827,K02826,K02828,K02829"
-	CytochromeOUbiquinolOxidase	"K02297,K02298,K02299,K02300"
+Aerobic	percent50CytochromeCOxidase	percent:50:CytochromeCOxidase
+Aerobic	percent50CytochromeOUbiquinolOxidase	percent:50:CytochromeOUbiquinolOxidase
+Aerobic	percent50CytochromeAa3600MenaquinolOxidase	percent:50:CytochromeAa3600MenaquinolOxidase
+Aerobic	CytochromeCOxidase	"K02275,K02274,K02276|K15408,K02277"
+Aerobic	CytochromeAa3600MenaquinolOxidase	"K02827,K02826,K02828,K02829"
+Aerobic	CytochromeOUbiquinolOxidase	"K02297,K02298,K02299,K02300"
 Tetrathionate Reduction	Tetrathionate Reduction	[1ofttrrs&1ofttrabc]|2ofttrabc
-	1ofttrrs	K13040|K13041
-	2ofttrabc	atleast:2:ttrabc
-	1ofttrabc	atleast:1:ttrabc
-	ttrabc	"K08359,K08358,K08357"
+Tetrathionate Reduction	1ofttrrs	K13040|K13041
+Tetrathionate Reduction	2ofttrabc	atleast:2:ttrabc
+Tetrathionate Reduction	1ofttrabc	atleast:1:ttrabc
+Tetrathionate Reduction	ttrabc	"K08359,K08358,K08357"
 Microaerophillic	Microaerophillic	[percent50CytochromeBDUbiquinolOxidase|percent50CytochromeCOxidaseCBB3]&ETC50
-	percent50CytochromeBDUbiquinolOxidase	percent:50:CytochromeBDUbiquinolOxidase
-	percent50CytochromeCOxidaseCBB3	percent:50:CytochromeCOxidaseCBB3
-	CytochromeBDUbiquinolOxidase	"K00425,K00426,K00424|K22501"
-	CytochromeCOxidaseCBB3	"K00404|K00405|K15862,K00407,K00406"
+Microaerophillic	percent50CytochromeBDUbiquinolOxidase	percent:50:CytochromeBDUbiquinolOxidase
+Microaerophillic	percent50CytochromeCOxidaseCBB3	percent:50:CytochromeCOxidaseCBB3
+Microaerophillic	CytochromeBDUbiquinolOxidase	"K00425,K00426,K00424|K22501"
+Microaerophillic	CytochromeCOxidaseCBB3	"K00404|K00405|K15862,K00407,K00406"
 Denitrification (Not ETC)	Denitrification (Not ETC)	notETC50&[NitrateReductase|NitriteReductase|NitricOxideReductase|NitrousOxideReductase]
-	NitrateReductase	K00370|K00371|K00374|K02567|K02568|EC1.7.5.1|EC1.9.6.1
-	NitriteReductase	K00368|K15864|EC1.7.2.1
-	NitricOxideReductase	K04561|K02305|EC1.7.2.5
-	NitrousOxideReductase	K00376|EC1.7.2.4
+Denitrification (Not ETC)	NitrateReductase	K00370|K00371|K00374|K02567|K02568|EC1.7.5.1|EC1.9.6.1
+Denitrification (Not ETC)	NitriteReductase	K00368|K15864|EC1.7.2.1
+Denitrification (Not ETC)	NitricOxideReductase	K04561|K02305|EC1.7.2.5
+Denitrification (Not ETC)	NitrousOxideReductase	K00376|EC1.7.2.4
