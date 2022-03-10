@@ -148,8 +148,15 @@ picrust_dbcan_single_ids <- picrust_dbcan_wide %>%
   rename("counts" = "max_count")
 
 
-#Combine picrust KO and picrust ec/dbcanid data
+#make wide format dbcan single ids with bins as columns and dbcan ids as rows
+GH_in_picrust_bins <- picrust_dbcan_single_ids %>%
+  pivot_wider(names_from = bin.id,
+              values_from = counts) %>%
+  rename("target_name" = "gene_id")
 
+write_tsv(GH_in_picrust_bins, "Clean_Data/GH_in_picrust_bins.tsv")
+
+#Combine picrust KO and picrust ec/dbcanid data
 picrust_ko_dbcan <- rbind(picrust_ko_long_norm, picrust_dbcan_single_ids) 
   
 

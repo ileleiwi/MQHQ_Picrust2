@@ -14,8 +14,15 @@ ko_rules <- read_xlsx("Data/KOs_for_functions.xlsx") %>%
 
 resp_rules <- read_tsv("Data/Respiration_rules.tsv")
 
+rules <- read_tsv("Data/rules.tsv")
 
-#functions to parse through resp_rules
+cazyid_EC <- read_tsv("Clean_Data/cazyid_EC.tsv")
 
-  
+#functions to parse through rules
+
+  #take highest count number for gene that satisfies rule
+
+
+#Rules
+
 
