@@ -20,9 +20,8 @@ picr <- rbind(picr_ko, picr_ec)
 source("Scripts/change_Rules_to_list.R")
 
 #make wide dataframes
-picr <- picr_dram %>%
-  select(-counts_dram) %>%
-  pivot_wider(values_from = "counts_picrust",
+picr <- picr %>%
+  pivot_wider(values_from = "counts",
               names_from = "gene_id") %>%
   column_to_rownames(var = "bin.id") %>%
   mutate(across(everything(),
@@ -60,25 +59,10 @@ checkSubRule <- function(rules = sub_rules, funct){
   return(rules[[funct]])
 }
 
-checkEC50 <- function(dataframe){
-  compIA <- paste0("K00330,[K00331&K00332&[K00333|K00331]&[K13378|K13380]],",
-                   "K00334,K00335,K00336,K00337,K00338,K00339,K00340,",
-                   "[K00341&K00342|K15863],K00343")
-  
-  compIB <- paste0("K05574,K05582,K05581,K05579,K05572,K05580,K05578,K05576,",
-                   "K05577,K05575,K05573,K05583,K05584,K05585")
-  
-  compIC <- paste0("K03945,K03946,K03947,K03948,K03949,K03950,K03951,K03952,",
-                   "K03953,K03954,K03955,K03956,K11352,K11353")
-  
-  
-}
-
-compIA <- paste0("K00330,[K00331&K00332&[K00333|K00331]&[K13378|K13380]],",
-                 "K00334,K00335,K00336,K00337,K00338,K00339,K00340,",
-                 "[K00341&K00342|K15863],K00343")
-
-str_list <- unlist(str_match_all(compIA, "\\[.+\\]"))
+str_list <- str_match_all(compIA, "\\[.+?\\]")
+str_vct <- unlist(str_list)
+str_list2 <-str_match_all(compIA, "\\[.+?\\]")
+strs_trimmed <- str_sub(str_vct, 2, -2)
 unlist(str_match(str_list, "\\[.+\\]"))
 
 
@@ -104,6 +88,100 @@ checkSulfRed <- function(dataframe){
   sub <- checkSubRule(main)
   parseOr(sub)
 }
+
+####EC50 Functions####
+
+compIA50 <- function(dataframe, row){
+  df <- as.data.frame(dataframe) %>%
+    slice(row) %>%
+    select(all_of(c("K00330", "K00331", "K00332", "K00333", "K00331", "K13378",
+                    "K13380", "K00334", "K00335", "K00336", "K00337", "K00338", 
+                    "K00339", "K00340", "K00341", "K00342", "K15863", 
+                    "K00343")))
+  #first condition
+  if(df[1, "K13378"] == 1 | df[1, "K13380"] == 1){
+    A <- 1
+  }else{
+    A <- 0
+  }
+  
+  #second condition
+  if(df[1, "K00331"] == 1 & df[1, "K00332"] == 1 & df[1, "K00333"] == 1){
+    B <- 1
+  }else{
+    B <- 0
+  }
+  
+  ##third condition
+  if(A & B){
+    C <- 1
+  }else{
+    C <- 0
+  }
+  
+  #fourth condition
+  if(df[1, "K00342"] == 1 | df[1, "K15863"] == 1){
+    D <- TRUE
+  }else{
+    D <- 0
+  }
+  
+  ##fifth condition
+  if(df[1, "K00341"] == 1 & D){
+    E <- 1
+  }else{
+    E <- 0
+  }
+
+  if(sum(df[1,c("K00330","K00334","K00335","K00336","K00337","K00338","K00339","K00340","K00343")], C, E) >= 6){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+}
+
+compIB50 <- function(dataframe, row){
+  df <- as.data.frame(dataframe) %>%
+    slice(row) %>%
+    select(all_of(c("K05574","K05582","K05581","K05579","K05572","K05580",
+                    "K05578","K05576","K05577","K05575",'K05573',"K05583",
+                    "K05584","K05585")))
+  
+  if(sum(df[1,]) >= 7){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+}
+  
+compIC50 <- function(dataframe, row){
+  df <- as.data.frame(dataframe) %>%
+    slice(row) %>%
+    select(all_of(c("K03945","K03946","K03947","K03948","K03949","K03950",
+                    "K03951","K03952","K03953","K03954","K03955","K03956",
+                    "K11352","K11353")))
+  
+  if(sum(df[1,]) >= 7){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+}
+
+checkEC50 <- function(dataframe, row){
+  if(compIA50(dataframe, row) | 
+     compIB50(dataframe, row) | 
+     compIC50(dataframe, row)){
+       return(TRUE)
+     }else{
+       return(FALSE)
+     }
+}
+
+
+
+
+
 
 
 #Rules
