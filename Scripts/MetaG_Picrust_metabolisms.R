@@ -44,12 +44,30 @@ matchKO <- function(string){
 }
 
 parseOr <- function(string){
-  for(i in 1:length(string)){
-    if(substr(string, i, i) == "|"){
-      
-    }
+ if(str_detect(string, "|")){
+   return(TRUE)
+ }else{
+   return(FALSE)
+ }
+}
+
+parseAnd <- function(string){
+  if(str_detect(string, "&")){
+    return(TRUE)
+  }else{
+    return(FALSE)
   }
 }
+
+parse50 <- function(string){
+  if(str_detect(string, "percent50")){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+}
+
+
 
 checkMainRule <- function(rules = main_rules, funct){
   return(rules[[funct]])
@@ -59,9 +77,10 @@ checkSubRule <- function(rules = sub_rules, funct){
   return(rules[[funct]])
 }
 
-str_list <- str_match_all(compIA, "\\[.+?\\]")
+
+test_str <- "[percent50CytochromeCOxidase|percent50CytochromeAa3600MenaquinolOxidase|percent50CytochromeOUbiquinolOxidase]&ETC50"
+str_list <- str_match_all(test_str, "\\[.+?\\]")
 str_vct <- unlist(str_list)
-str_list2 <-str_match_all(compIA, "\\[.+?\\]")
 strs_trimmed <- str_sub(str_vct, 2, -2)
 unlist(str_match(str_list, "\\[.+\\]"))
 
@@ -69,18 +88,65 @@ unlist(str_match(str_list, "\\[.+\\]"))
 
 
 priorityString <- function(string){
-  strvect <- unlist(str_match_all(string, "\\[.+?\\]"))
-  if(length(strvect) == 0){
-    return(0)
+  strlist <- str_match_all(string, "\\[.+?\\]")
+  #strlist_trimmed <- str_sub(strlist, 2, -2)
+  if(length(strlist) == 0){
+    return(FALSE)
   }else{
-    for(i in strvect){
-      if(length(unlist(str_match_all(i, "\\[.+?\\]"))) == 0){
-        
-      }
-    }
+    return(TRUE) 
   }
-  
 }
+
+
+compIA <- "K00330,[K00331&K00332&[K00333|K00331]&[K13378|K13380]],K00334,K00335,K00336,K00337,K00338,K00339,K00340,[K00341&K00342|K15863],K00343"
+str_match_all(compIA, "\\[.+?\\]")
+
+priorityString(compIA)
+
+index <- c()
+for(i in 1:nchar(compIA)){
+  if(str_sub(compIA, i, i) == "["){
+    index <- c(index, i)
+  }else if(str_sub(compIA, i, i) == "]"){
+    index <- c(index, -i)
+  }
+}
+
+priority_list <- list()
+dbl_idx_strt <- c()
+dbl_idx_end <- c()
+for(i in 2:length(index)){
+  if(index[i] > 0 & index[i-1] > 0){
+    dbl_idx_strt <- c(dbl_idx_strt, index[i-1])
+  }else if(index[i] < 0 & index[i-1] > 0){
+    priority_list[length(priority_list)+1] <- str_sub(compIA, index[i-1], -index[i])
+  }else if(index[i] < 0 & index[i-1] < 0){
+    dbl_idx_end <- c(dbl_idx_end, -index[i-1])
+  }
+}
+
+if(length(dbl_idx_strt) != 0 & length(dbl_idx_end) != 0){
+  for(i in 1:length(dbl_idx_strt)){
+    priority_list[length(priority_list)+1] <-str_sub(compIA, dbl_idx_strt[i], dbl_idx_end[i])
+  }
+}
+
+
+
+
+evaluateRule <- function(string){
+  if(priorityString(string)){
+    FIRST <- str_sub(str_match_all(string, "\\[.+?\\]"), 2, -2)
+    FIRST_ANDs <- 
+  }
+  if(parseAnd(string)){
+    ANDs <- str_split(string, "&")
+  }
+  if(parseOr(string)){
+    ORs <- str_split(string, "|")
+  }
+}
+
 
 
 checkSulfRed <- function(dataframe){
