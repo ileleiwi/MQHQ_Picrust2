@@ -78,11 +78,6 @@ checkSubRule <- function(rules = sub_rules, funct){
 }
 
 
-test_str <- "[percent50CytochromeCOxidase|percent50CytochromeAa3600MenaquinolOxidase|percent50CytochromeOUbiquinolOxidase]&ETC50"
-str_list <- str_match_all(test_str, "\\[.+?\\]")
-str_vct <- unlist(str_list)
-strs_trimmed <- str_sub(str_vct, 2, -2)
-unlist(str_match(str_list, "\\[.+\\]"))
 
 
 
@@ -99,35 +94,59 @@ priorityString <- function(string){
 
 
 compIA <- "K00330,[K00331&K00332&[K00333|K00331]&[K13378|K13380]],K00334,K00335,K00336,K00337,K00338,K00339,K00340,[K00341&K00342|K15863],K00343"
-str_match_all(compIA, "\\[.+?\\]")
+test_str <- "[percent50CytochromeCOxidase|percent50CytochromeAa3600MenaquinolOxidase|percent50CytochromeOUbiquinolOxidase]&ETC50"
+compIB <- "K05574,K05582,K05581,K05579,K05572,K05580,K05578,K05576,K05577,K05575,K05573,K05583,K05584,K05585"
 
-priorityString(compIA)
+test_p_list <- buildPriorityList(buildIndex(compIA), compIA)
 
-index <- c()
-for(i in 1:nchar(compIA)){
-  if(str_sub(compIA, i, i) == "["){
-    index <- c(index, i)
-  }else if(str_sub(compIA, i, i) == "]"){
-    index <- c(index, -i)
+buildIndex <- function(rule_string){
+  index <- c()
+  for(i in 1:nchar(rule_string)){
+    if(str_sub(rule_string, i, i) == "["){
+      index <- c(index, i)
+    }else if(str_sub(rule_string, i, i) == "]"){
+      index <- c(index, -i)
+    }
   }
+  return(index)
 }
 
-priority_list <- list()
-dbl_idx_strt <- c()
-dbl_idx_end <- c()
-for(i in 2:length(index)){
-  if(index[i] > 0 & index[i-1] > 0){
-    dbl_idx_strt <- c(dbl_idx_strt, index[i-1])
-  }else if(index[i] < 0 & index[i-1] > 0){
-    priority_list[length(priority_list)+1] <- str_sub(compIA, index[i-1], -index[i])
-  }else if(index[i] < 0 & index[i-1] < 0){
-    dbl_idx_end <- c(dbl_idx_end, -index[i-1])
-  }
-}
 
-if(length(dbl_idx_strt) != 0 & length(dbl_idx_end) != 0){
-  for(i in 1:length(dbl_idx_strt)){
-    priority_list[length(priority_list)+1] <-str_sub(compIA, dbl_idx_strt[i], dbl_idx_end[i])
+buildPriorityList <- function(index, rule_string){
+  priority_list <- list()
+  dbl_idx_strt <- c()
+  dbl_idx_end <- c()
+  
+  if(is.null(index)){
+    priority_list[length(priority_list)+1] <- rule_string
+    names(priority_list) <- "org"
+    return(priority_list)
+  }else{
+    for(i in 2:length(index)){
+      if(index[i] > 0 & index[i-1] > 0){
+        dbl_idx_strt <- c(dbl_idx_strt, index[i-1])
+      }else if(index[i] < 0 & index[i-1] > 0){
+        x <- unlist(str_sub(rule_string, index[i-1], -index[i]))
+        priority_list[length(priority_list)+1] <- str_remove_all(x, "\\[|\\]")
+      }else if(index[i] < 0 & index[i-1] < 0){
+        dbl_idx_end <- c(dbl_idx_end, -index[i-1])
+      }
+    }
+    names(priority_list) <- letters[1:length(priority_list)]
+    first_names <- names(priority_list)
+    
+    dbl_names <- c()
+    if(length(dbl_idx_strt) != 0 & length(dbl_idx_end) != 0){
+      for(i in 1:length(dbl_idx_strt)){
+        priority_list[length(priority_list)+1] <- str_sub(compIA, dbl_idx_strt[i], dbl_idx_end[i])
+        dbl_names <- c(dbl_names, paste0("dbl", as.character(i)))
+      }
+    }
+    
+    priority_list[length(priority_list)+1] <- rule_string
+    
+    names(priority_list) <- c(first_names, dbl_names, "org")
+    return(priority_list)
   }
 }
 
