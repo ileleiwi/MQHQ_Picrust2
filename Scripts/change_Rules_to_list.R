@@ -37,8 +37,6 @@ pullMainRule <- function(df){
 }
 
 
-main_rules <- pullMainRule(resp_rules)
-
 #get subrules
 pullSubRules <- function(df){
   list_sub <- list()
