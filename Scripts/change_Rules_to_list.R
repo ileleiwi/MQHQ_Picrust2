@@ -52,3 +52,4 @@ pullSubRules <- function(df){
 }
 
 sub_rules <- pullSubRules(resp_rules)
+main_rules <- pullMainRule(resp_rules)
