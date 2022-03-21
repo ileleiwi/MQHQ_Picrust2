@@ -19,41 +19,29 @@ picr <- rbind(picr_ko, picr_ec) %>%
   as.data.frame()
 
 #rules
-source("Scripts/change_Rules_to_list.R")
+rules <- read_tsv("Clean_Data/picr_rules.tsv") %>%
+  as.data.frame()
 
 #functions
 source("Scripts/rule_functions.R")
 
+#build checkRule function
+checkRule <- makecheckRule(rules)
 
-#checks rule structure and gets id's or sub funct
-checkRule <- function(funct){
-  switch(funct,
-         SulfateReduction = "Dsr",
-         Dsr = "K11180|EC1.8.99.5|K11181|EC1.8.99.5",
-         FumarateReduction = "K00244|K00245|K00246|K00247",
-         Aerobic = "[percent50CytochromeCOxidase|percent50CytochromeAa3600MenaquinolOxidase|percent50CytochromeOUbiquinolOxidase]&ETC50",
-         CytochromeCOxidase = "K02275,K02274,K02276|K15408,K02277",
-         CytochromeAa3600MenaquinolOxidase = "K02827,K02826,K02828,K02829",
-         CytochromeOUbiquinolOxidase = "K02297,K02298,K02299,K02300",
-         TetrathionateReduction = "[ttrrs&1ofttrabc]|2ofttrabc",
-         ttrrs = "K13040|K13041",
-         ttrabc = "K08359,K08358,K08357",
-         Microaerophillic = "[percent50CytochromeBDUbiquinolOxidase|percent50CytochromeCOxidaseCBB3]&ETC50",
-         CytochromeBDUbiquinolOxidase = "K00425,K00426,K00424|K22501",
-         CytochromeCOxidaseCBB3 = "K00404|K00405|K15862,K00407,K00406",
-         DenitrificationNotETC = "notETC50&[NitrateReductase|NitriteReductase|NitricOxideReductase|NitrousOxideReductase]",
-         NitrateReductase = "K00370|K00371|K00374|K02567|K02568|EC1.7.5.1|EC1.9.6.1",
-         NitriteReductase = "K00368|K15864|EC1.7.2.1",
-         NitricOxideReductase = "K04561|K02305|EC1.7.2.5",
-         NitrousOxideReductase = "K00376|EC1.7.2.4",
-         ETC50 = "percent50ComplexIA|percent50ComplexIB|percent50ComplexIC",
-         ComplexIA = "K00330,[K00331&K00332&[K00333|K00331]&[K13378|K13380]],K00334,K00335,K00336,K00337,K00338,K00339,K00340,[K00341&K00342|K15863],K00343",
-         ComplexIB = "K05574,K05582,K05581,K05579,K05572,K05580,K05578,K05576,K05577,K05575,K05573,K05583,K05584,K05585",
-         ComplexIC = "K03945,K03946,K03947,K03948,K03949,K03950,K03951,K03952,K03953,K03954,K03955,K03956,K11352,K11353",
-         NA)
-}
+#generate dataframe
+x <- evaluateCountsDf(picr, rules)
 
 
+
+
+
+
+
+##################################################################
+
+
+
+##################################################################
 
 
 

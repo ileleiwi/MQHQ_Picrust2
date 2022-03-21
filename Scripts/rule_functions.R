@@ -7,6 +7,15 @@ setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
 
 #functions to parse through rules
 
+#build checkRule function from rule_df
+makecheckRule <- function(rule_df) {
+  switch_list <- list()
+  switch_list <- append(switch_list, rule_df[["child"]])
+  names(switch_list) <- rule_df[["parent"]]
+  function(funct) {
+    pluck(switch_list, funct)
+  }
+}
 
 #evaluates string from rule structure and outputs rule list, used in evaluateGenome()
 evaluateRule <- function(rule_df, rule_out){
@@ -694,13 +703,43 @@ evaluateGenome <- function(counts_df, rule_df, genome, omit = NA){
 #evaluates function presence for all genomes in counts_df and all functions in rule_df
 evaluateCountsDf <- function(counts_df, rule_df, omit = NA){
   out_df <- data.frame()
+  
+  #progressbar
+  n_iter <- length(unique(counts_df[['bin.id']]))
+  pb <- txtProgressBar(min = 0,
+                       max = n_iter,
+                       style = 3,
+                       width = n_iter, 
+                       char = "=") 
+  
+  init <- numeric(n_iter)
+  end <- numeric(n_iter)
+  
+  i <- 1
   for(gen in unique(counts_df[['bin.id']])){
+    init[i] <- Sys.time()
+    
+    #code
     add_row <- evaluateGenome(counts_df, rule_df, gen, omit = omit)
-    out_df <- rbind(out_df, add_row)
+    out_df <- rbind(out_df, as.data.frame(add_row))
+    
+    end[i] <- Sys.time()
+    
+    #progress bar
+    setTxtProgressBar(pb, i)
+    time <- round(lubridate::seconds_to_period(sum(end - init)), 0)
+    est <- n_iter * (mean(end[end != 0] - init[init != 0])) - time
+    remaining <- round(lubridate::seconds_to_period(est), 0)
+    cat(paste(" // Execution time:", time,
+              " // Estimated time remaining:", remaining, " "))
+    #i count
+    i <- i+1
   }
   
   out_df <- out_df %>%
     select(genome, everything())
   
+  cat("done\n")
   return(out_df)
 }
+
