@@ -19,6 +19,14 @@ unique_asvs <- match_statistics %>%
   pull(ASV_header) %>%
   unique()
 
+#unique Bins with 16S match
+unique_bins <- match_statistics %>%
+  mutate(bin = ifelse(str_detect(bin_scaffold_header, "lactobacillus"),
+                      str_remove(bin_scaffold_header, "_scaffold.+"),
+                      str_extract(bin_scaffold_header, ".+?bin\\.[\\d]{1,2}"))) %>%
+  pull(bin) %>%
+  unique()
+
 #filter feature_table to include only unique asvs
 unique_feature_table <- feature_table %>%
   filter(`#OTU ID` %in% unique_asvs)
