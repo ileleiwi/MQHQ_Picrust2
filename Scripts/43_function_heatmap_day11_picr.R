@@ -44,17 +44,18 @@ design <- list(control = c("49-(11)-C-F-LO", "47-(11)-C-F-LM", "50-(11)-C-F-LP")
 taxonomy <- read_tsv("Clean_Data/taxonomy.tsv") %>%
   rename("FeatureID" = "Feature ID")
 
+dram_product <- read_tsv("Clean_Data/dram_product_picrust_day11.tsv")
+
 picr_func <- read_tsv("Clean_Data/picr_day11_functions.tsv") %>%
   left_join(taxonomy, by = c("genome" = "FeatureID")) %>%
   filter(!str_detect(Taxon, "D_4__Mitochondria|D_3__Chloroplast")) %>%# remove mitochondria and chloroplast from picrust2
   select(-Taxon, -Confidence) %>%
+  left_join(dram_product, by = c("genome" = "bins")) %>%
   column_to_rownames(var = "genome")
   
   
 ft <- read_tsv("Clean_Data/feature_table_clean_r1-r5.tsv") %>%
   select(asv_id, all_of(metaG_samples)) 
-
-dram_product <- read_tsv("Clean_Data/dram_product_picrust_day11.tsv")
 
 ################functions################
 
@@ -146,12 +147,12 @@ SumWithinTrt <- function(sample_function_list, design){
 }
 
 
-CountAcrossRows <- function(working_list){
+CountAcrossCols <- function(working_list){
   #count number of genomes within each sample that are more than 0.5% relative abundance
   #for each function
   for(i in names(working_list)){
     sample_matrix <- ifelse(working_list[[i]] >= 0.5, 1, 0)
-    sample_matrix <- apply(sample_matrix, 1, sum)
+    sample_matrix <- apply(sample_matrix, 2, sum)
     sample_df <- as.data.frame(sample_matrix)
     colnames(sample_df) <- i
     working_list[[i]] <- sample_df
@@ -179,6 +180,35 @@ summed_relabund <- generateRelabundFunctList(function_df = picr_func, feature_ta
 #create dataframe where columns are sample names and rows are functions
 samples_by_function <- do.call(cbind.data.frame, summed_relabund)
 
+#modify rownames
+samples_by_function <- samples_by_function %>%
+  rownames_to_column(var = "functions") %>%
+  mutate(functions = case_when(functions == "NonSpecificHexoseSugar" ~ "Hexose",
+                               functions == "GalacturonicAcid" ~ "Galacturonic Acid",
+                               functions == "Non.SpecificAlcohols" ~ "Alcohol",
+                               functions == "SulfateReduction" ~ "Sulfate Reduction",
+                               functions == "FumarateReduction" ~ "Fumarate Reduction",
+                               functions == "TetrathionateReduction" ~ "Tetrathionate Reduction",
+                               functions == "DenitrificationNotETC" ~ "Denitrification (Not ETC)",
+                               functions == "Alpha-galactans" ~ "Alpha-Galactans",
+                               functions == "Beta-galactan" ~ "Beta-Galactan (Pectic Galactan)",
+                               functions == "Mixed-Linkage glucans" ~ "Mixed-Linkage Glucans",
+                               functions == "Beta-mannan" ~ "Beta-Mannan",
+                               functions == "Alpha-mannan" ~ "Alpha-Mannan",
+                               functions == "Rhamnose" ~ "Rhamnose Cleavage",
+                               functions == "Arabinose" ~ "Arabinose Cleavage",
+                               functions == "Fucose" ~ "Fucose Cleavage",
+                               T ~ functions),
+         functions = str_remove(functions, "Degradation")) %>%
+  column_to_rownames(var = "functions")
+
+#scale by function
+samples_by_function_scaled <- t(scale(t(samples_by_function)))
+samples_by_function_scaled[is.nan(samples_by_function_scaled)] <- 0
+samples_by_function_scaled <- as.data.frame(samples_by_function_scaled)
+
+
+
 #create dataframe where columns are sample names and rows are functions for healthy and infected
 treatment_by_function <- SumWithinTrt(generateRelabundFunctList(function_df = picr_func, feature_table = ft_rel), design)
 #combine treatments into one dataframe with samples labeled from which treatment they originated
@@ -199,27 +229,11 @@ treatment_by_function <- treatment_by_function %>%
   select(bins, treatment, functions, summed_relative_abundance) %>%
   left_join(taxonomy, by = c("bins" = "FeatureID"))
 
-#create list of number of genomes more than 0.5% relative abundancefor each sample and function
-genome_count <- CountAcrossRows(generateRelabundFunctList(function_df = picr_func, feature_table = ft_rel))
-
-genome_count_df <- do.call(cbind.data.frame, genome_count)
-
-
-
-#scale by function
-samples_by_function_scaled <- t(scale(t(samples_by_function)))
-samples_by_function_scaled[is.nan(samples_by_function_scaled)] <- 0
-samples_by_function_scaled <- as.data.frame(samples_by_function_scaled)
-
-#modify rownames
-samples_by_function_scaled <- samples_by_function_scaled %>%
-  rownames_to_column(var = "functions") %>%
-  mutate(case_when())
 
 #Split dataframes by healthy and infected for plotting
 healthy <- samples_by_function_scaled %>%
-  select(LM, LO, LP) %>%
   rownames_to_column(var = "functions") %>%
+  select(matches("LM|LO|LP|functions")) %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
                              "Mixed-Linkage Glucans","Xylans","Xyloglucan", "Alpha-Mannan", 
                              "Beta-Mannan", "Mucin", "Starch", "Pectin", "Chitin", "Arabinan",
@@ -233,9 +247,10 @@ healthy <- samples_by_function_scaled %>%
                              "Denitrification (Not ETC)", "TMAO"))) %>%
   column_to_rownames(var = "functions")
 
+
 infected <- samples_by_function_scaled %>%
-  select(KE, KL, KS) %>%
   rownames_to_column(var = "functions") %>%
+  select(matches("KE|KL|KS|functions")) %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
                              "Mixed-Linkage Glucans","Xylans","Xyloglucan", "Alpha-Mannan", 
                              "Beta-Mannan", "Mucin", "Starch", "Pectin", "Chitin", "Arabinan",
@@ -250,7 +265,7 @@ infected <- samples_by_function_scaled %>%
   column_to_rownames(var = "functions")
 
 healthy_unscaled <- samples_by_function %>%
-  select(LM, LO, LP) %>%
+  select(matches("LM|LO|LP")) %>%
   rownames_to_column(var = "functions") %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
                              "Mixed-Linkage Glucans","Xylans","Xyloglucan", "Alpha-Mannan", 
@@ -266,7 +281,7 @@ healthy_unscaled <- samples_by_function %>%
   column_to_rownames(var = "functions")
 
 infected_unscaled <- samples_by_function %>%
-  select(KE, KL, KS) %>%
+  select(matches("KE|KL|KS")) %>%
   rownames_to_column(var = "functions") %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
                              "Mixed-Linkage Glucans","Xylans","Xyloglucan", "Alpha-Mannan", 
@@ -281,9 +296,15 @@ infected_unscaled <- samples_by_function %>%
                              "Denitrification (Not ETC)", "TMAO"))) %>%
   column_to_rownames(var = "functions")
 
+
+#create list of number of genomes more than 0.5% relative abundancefor each sample and function
+genome_count <- CountAcrossCols(generateRelabundFunctList(function_df = picr_func, feature_table = ft_rel))
+
+genome_count_df <- do.call(cbind.data.frame, genome_count)
+
 #dataframes for heatmap barplot annotations
 genomes_healthy <- genome_count_df %>%
-  select(LM, LO, LP) %>%
+  select(matches("LM|LO|LP")) %>%
   mutate(healthy = rowSums(.)) %>%
   rownames_to_column(var = "functions") %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
@@ -301,7 +322,7 @@ genomes_healthy <- genome_count_df %>%
   column_to_rownames(var = "functions")
 
 genomes_infected <- genome_count_df %>%
-  select(KE, KL, KS) %>%
+  select(matches("KE|KL|KS")) %>%
   mutate(infected = rowSums(.)) %>%
   rownames_to_column(var = "functions") %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
@@ -322,7 +343,12 @@ genomes_infected <- genome_count_df %>%
 #Split dataframes by function type for plotting
 cazy_sbf <- samples_by_function_scaled %>%
   rownames_to_column(var = "functions") %>%
-  filter(functions %in% colnames(cazy)) %>%
+  filter(functions %in% c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
+                          "Mixed-Linkage Glucans","Xylans","Xyloglucan", "Alpha-Mannan", 
+                          "Beta-Mannan", "Mucin", "Starch", "Pectin", "Chitin", "Arabinan",
+                          "Alpha-Galactans", "Beta-Galactan (Pectic Galactan)",
+                          "Sulf-Polysachharides", "Arabinose Cleavage","Rhamnose Cleavage",
+                          "Fucose Cleavage")) %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
                              "Mixed-Linkage Glucans","Xylans","Xyloglucan", "Alpha-Mannan", 
                              "Beta-Mannan", "Mucin", "Starch", "Pectin", "Chitin", "Arabinan",
@@ -333,7 +359,9 @@ cazy_sbf <- samples_by_function_scaled %>%
 
 sug_sbf <- samples_by_function_scaled %>%
   rownames_to_column(var = "functions") %>%
-  filter(functions %in% colnames(sugar)) %>%
+  filter(functions %in% c("Lactose", "Sucrose", "Galactose", "Mannose", 
+                          "Galacturonic Acid", "Hexose", "Xylose", "Fucose", 
+                          "Fructose")) %>%
   arrange(match(functions, c("Lactose", "Sucrose", "Galactose", "Mannose", 
                              "Galacturonic Acid", "Hexose", "Xylose", "Fucose", 
                              "Fructose"))) %>%
@@ -341,15 +369,182 @@ sug_sbf <- samples_by_function_scaled %>%
 
 scfa_sbf <- samples_by_function_scaled %>%
   rownames_to_column(var = "functions") %>%
-  filter(functions %in% colnames(scfa)) %>%
+  filter(functions %in% c("Butyrate", "Propionate", "Acetate", "Lactate", 
+                          "Alcohol")) %>%
   arrange(match(functions, c("Butyrate", "Propionate", "Acetate", "Lactate", 
                              "Alcohol"))) %>%
   column_to_rownames(var = "functions")
 
 resp_sbf <- samples_by_function_scaled %>%
   rownames_to_column(var = "functions") %>%
-  filter(functions %in% colnames(respiration)) %>%
+  filter(functions %in% c("Sulfate Reduction", "Fumarate Reduction",
+                          "Aerobic", "Tetrathionate Reduction", "Microaerophillic",
+                          "Denitrification (Not ETC)", "TMAO")) %>%
   arrange(match(functions, c("Sulfate Reduction", "Fumarate Reduction",
                              "Aerobic", "Tetrathionate Reduction", "Microaerophillic",
                              "Denitrification (Not ETC)", "TMAO"))) %>%
   column_to_rownames(var = "functions")
+
+## plots
+healthy_annotation <- rowAnnotation(genomes = anno_barplot(genomes_healthy$healthy,
+                                                           which = "row",
+                                                           border = FALSE,
+                                                           axis_param = list(direction = "reverse"),
+                                                           ylim = c(0,60),
+                                                           height = unit(8, "cm")),
+                                    annotation_label = "# of Genomes\n(RelAbund >=0.5%)",
+                                    annotation_name_gp= gpar(fontsize = 8))
+
+infected_annotation <- rowAnnotation(genomes = anno_barplot(genomes_infected$infected,
+                                                            which = "row",
+                                                            border = FALSE,
+                                                            axis_param = list(direction = "reverse"),
+                                                            ylim = c(0,60),
+                                                            height = unit(8, "cm")),
+                                     annotation_label = "# of Genomes\n(RelAbund >=0.5%)",
+                                     annotation_name_gp= gpar(fontsize = 8))
+
+ht_healthy <- Heatmap(as.matrix(healthy),
+                      col = c("#2A3479", "#FCF8CC"),
+                      border = TRUE,
+                      row_split = factor(c(rep("Polymers", 19),
+                                           rep("Sugars", 9),
+                                           rep("Alcohol &\nFatty Acids", 5),
+                                           rep("Respiration", 7)), 
+                                         levels = c("Polymers", "Sugars",
+                                                    "Alcohol &\nFatty Acids",
+                                                    "Respiration")),
+                      column_split = rep("Healthy", 3),
+                      column_gap = unit(2, "mm"),
+                      row_gap = unit(4, "mm"),
+                      rect_gp = gpar(col = "black", lwd = 2),
+                      #row_names_gp = gpar(fontsize = 8), 
+                      #row_names_side = "right", 
+                      #row_title_side = "left",
+                      cluster_rows = FALSE,
+                      cluster_columns = FALSE,
+                      cluster_column_slices = FALSE,
+                      cluster_row_slices = FALSE,
+                      left_annotation = healthy_annotation)
+
+ht_infected <- Heatmap(as.matrix(infected),
+                       col = c("#2A3479", "#FCF8CC"),
+                       border = TRUE,
+                       row_split = factor(c(rep("Polymers", 19),
+                                            rep("Sugars", 9),
+                                            rep("Alcohol &\nFatty Acids", 5),
+                                            rep("Respiration", 7)), 
+                                          levels = c("Polymers", "Sugars",
+                                                     "Alcohol &\nFatty Acids",
+                                                     "Respiration")),
+                       column_split = rep("Infected", 3),
+                       column_gap = unit(2, "mm"),
+                       row_gap = unit(4, "mm"),
+                       rect_gp = gpar(col = "black", lwd = 2),
+                       row_names_gp = gpar(fontsize = 8), 
+                       row_names_side = "right", 
+                       row_title_side = "right",
+                       cluster_rows = FALSE,
+                       cluster_columns = FALSE,
+                       cluster_column_slices = FALSE,
+                       cluster_row_slices = FALSE,
+                       left_annotation = infected_annotation)
+
+ht_both <- ht_healthy + ht_infected
+
+#pdf("polymer_heatmap_scaled_largest_to_smallest.pdf")
+ht_both
+#dev.off()
+
+
+## Heatmap Scaled by Row, Clustered hclust complete
+
+
+genomes <- cbind(genomes_healthy, genomes_infected) 
+
+cazy_g <- genomes[c(13, 11, 17,  1,  6,  3,  5,  4,  2, 14, 12, 15, 7, 10, 19, 
+                    18, 16,  9,  8),]
+
+sugar_g <- genomes[20:28,]
+sugar_g <- sugar_g[c(3, 5, 1, 6, 9, 4, 8, 2, 7),]
+
+scfa_g <- genomes[29:33, ]
+scfa_g <- scfa_g[c(3, 1, 2, 5, 4), ]
+
+resp_g <- genomes[34:40,]
+resp_g <- resp_g[c(6, 1, 2, 7, 3, 4, 5),]
+
+genomes_reordered <- rbind(cazy_g, sugar_g, scfa_g, resp_g)
+
+sig_df_reorderd <- significance_df[match(rownames(genomes_reordered),
+                                         significance_df$functions),] 
+rownames(sig_df_reorderd) <- NULL
+sig_df_reorderd <- sig_df_reorderd %>%
+  column_to_rownames(var = "functions") %>%
+  select(pval) %>%
+  mutate(pval = if_else(condition = pval <= 0.05,
+                        true = pval,
+                        false = NaN))
+
+colors_sig <- c("#E54F6D", "#22162B")
+
+pvalue_col_fun = colorRamp2(c(0, 2, 3), c("#E54F6D", "#22162B", "black")) 
+
+significance_annoatation <- rowAnnotation(`p-value >= 0.05` = anno_simple(sig_df_reorderd$pval, col = pvalue_col_fun))
+
+healthy_annotation <- rowAnnotation(genomes = anno_barplot(genomes_reordered$healthy,
+                                                           which = "row",
+                                                           border = FALSE,
+                                                           axis_param = list(direction = "reverse"),
+                                                           ylim = c(0,60),
+                                                           height = unit(8, "cm")),
+                                    annotation_label = "# of Genomes\n(RelAbund >=0.5%)",
+                                    annotation_name_gp= gpar(fontsize = 8))
+
+infected_annotation <- rowAnnotation(genomes = anno_barplot(genomes_reordered$infected,
+                                                            which = "row",
+                                                            border = FALSE,
+                                                            axis_param = list(direction = "reverse"),
+                                                            ylim = c(0,60),
+                                                            height = unit(8, "cm")),
+                                     annotation_label = "# of Genomes\n(RelAbund >=0.5%)",
+                                     annotation_name_gp= gpar(fontsize = 8))
+
+
+
+
+
+ht_both_clust <- Heatmap(as.matrix(samples_by_function_scaled),
+                         col = c("#2A3479", "#FCF8CC"),
+                         border = TRUE,
+                         row_split = factor(c(rep("Polymers", 19),
+                                              rep("Sugars", 9),
+                                              rep("Alcohol &\nFatty Acids", 5),
+                                              rep("Respiration", 7)), 
+                                            levels = c("Polymers", "Sugars",
+                                                       "Alcohol &\nFatty Acids",
+                                                       "Respiration")),
+                         column_split = c(rep("Healthy", 3), rep("Infected", 3)),
+                         column_gap = unit(2, "mm"),
+                         row_gap = unit(4, "mm"),
+                         rect_gp = gpar(col = "black", lwd = 2),
+                         row_names_gp = gpar(fontsize = 8), 
+                         row_names_side = "right", 
+                         row_title_side = "left",
+                         cluster_rows = TRUE,
+                         cluster_columns = TRUE,
+                         cluster_column_slices = FALSE,
+                         cluster_row_slices = FALSE,
+                         clustering_method_rows = "complete",
+                         left_annotation = significance_annoatation)
+
+lgd_pvalue = Legend(title = "p-value", col_fun = pvalue_col_fun, at = c(0, 1, 2, 3), 
+                    labels = c("1", "0.1", "0.01", "0.001"))
+lgd_sig = Legend(pch = "*", type = "points", labels = "< 0.05")
+
+#pdf("polymer_heatmap_clustered_significance.pdf")
+ht_both_clust
+draw(ht_both_clust, annotation_legend_list = list(lgd_pvalue, lgd_sig))
+#dev.off()
+
+
