@@ -1,6 +1,6 @@
 ## ---------------------------
 ##
-## Script: 33_function_heatmap_day11_picr
+## Script: 53_function_heatmap_day11_picr
 ##
 ## Purpose: Make heatmap of picrust2 predicted genome functions from 16S relative abundance 
 ##
@@ -183,24 +183,46 @@ samples_by_function <- do.call(cbind.data.frame, summed_relabund)
 #modify rownames
 samples_by_function <- samples_by_function %>%
   rownames_to_column(var = "functions") %>%
-  mutate(functions = case_when(functions == "NonSpecificHexoseSugar" ~ "Hexose",
-                               functions == "GalacturonicAcid" ~ "Galacturonic Acid",
-                               functions == "Non.SpecificAlcohols" ~ "Alcohol",
-                               functions == "SulfateReduction" ~ "Sulfate Reduction",
-                               functions == "FumarateReduction" ~ "Fumarate Reduction",
-                               functions == "TetrathionateReduction" ~ "Tetrathionate Reduction",
-                               functions == "DenitrificationNotETC" ~ "Denitrification (Not ETC)",
-                               functions == "Alpha-galactans" ~ "Alpha-Galactans",
-                               functions == "Beta-galactan" ~ "Beta-Galactan (Pectic Galactan)",
-                               functions == "Mixed-Linkage glucans" ~ "Mixed-Linkage Glucans",
-                               functions == "Beta-mannan" ~ "Beta-Mannan",
-                               functions == "Alpha-mannan" ~ "Alpha-Mannan",
-                               functions == "Rhamnose" ~ "Rhamnose Cleavage",
-                               functions == "Arabinose" ~ "Arabinose Cleavage",
+  mutate(functions = case_when(str_detect(functions, "NonSpecificHexoseSugar") ~ "Hexose",
+                               str_detect(functions, "GalacturonicAcid") ~ "Galacturonic Acid",
+                               str_detect(functions, "Non.SpecificAlcohols") ~ "Alcohol",
+                               str_detect(functions, "SulfateReduction") ~ "Sulfate Reduction",
+                               str_detect(functions, "FumarateReduction") ~ "Fumarate Reduction",
+                               str_detect(functions, "TetrathionateReduction") ~ "Tetrathionate Reduction",
+                               str_detect(functions, "DenitrificationNotETC") ~ "Denitrification (Not ETC)",
+                               str_detect(functions, "Alpha-galactans") ~ "Alpha-Galactans",
+                               str_detect(functions, "Beta-galactan") ~ "Beta-Galactan (Pectic Galactan)",
+                               str_detect(functions, "Mixed-Linkage glucans") ~ "Mixed-Linkage Glucans",
+                               str_detect(functions, "Beta-mannan") ~ "Beta-Mannan",
+                               str_detect(functions, "Alpha-mannan") ~ "Alpha-Mannan",
+                               str_detect(functions, "Rhamnose") ~ "Rhamnose Cleavage",
+                               str_detect(functions, "Arabinose") ~ "Arabinose Cleavage",
                                functions == "Fucose" ~ "Fucose Cleavage",
                                T ~ functions),
          functions = str_remove(functions, "Degradation")) %>%
   column_to_rownames(var = "functions")
+
+#reorder samples_by_function
+polymers <- c("Arabinan", "Pectin", "Arabinose Cleavage", "Polyphenolics", "Xyloglucan",
+              "Amorphous Cellulose", "Xylans", "Mixed-Linkage Glucans", 
+              "Crystalline Cellulose", "Alpha-Galactans", "Chitin", 
+              "Beta-Galactan (Pectic Galactan)", "Alpha-Mannan", "Starch", 
+              "Fucose Cleavage", "Rhamnose Cleavage", "Sulf-Polysachharides", "Mucin",
+              "Beta-Mannan")
+
+
+sugars <- c("Galactose", "Galacturonic Acid", "Lactose", "Hexose", "Fructose",
+            "Mannose", "Fucose", "Sucrose", "Xylose")
+
+scfas <- c("Acetate", "Butyrate", "Propionate", "Alcohol", "Lactate")
+
+resp <- c("Denitrification (Not ETC)", "Sulfate Reduction", 
+          "Fumarate Reduction", "TMAO", "Aerobic", "Tetrathionate Reduction",
+          "Microaerophillic")
+new_order <- c(polymers, sugars, scfas, resp)
+
+samples_by_function <- samples_by_function[match(new_order,
+                                                 rownames(samples_by_function)),]
 
 #scale by function
 samples_by_function_scaled <- t(scale(t(samples_by_function)))
@@ -208,6 +230,14 @@ samples_by_function_scaled[is.nan(samples_by_function_scaled)] <- 0
 samples_by_function_scaled <- as.data.frame(samples_by_function_scaled)
 
 
+
+#write out for stats script
+samples_by_function_out <- samples_by_function %>%
+  rownames_to_column(var = "function")
+write_tsv(samples_by_function_out, "Clean_Data/samples_by_function_out_day11.tsv")
+
+#run stats on samples by function
+source("Scripts/43_stats_for_function_heatmap_day11.R")
 
 #create dataframe where columns are sample names and rows are functions for healthy and infected
 treatment_by_function <- SumWithinTrt(generateRelabundFunctList(function_df = picr_func, feature_table = ft_rel), design)
@@ -301,6 +331,28 @@ infected_unscaled <- samples_by_function %>%
 genome_count <- CountAcrossCols(generateRelabundFunctList(function_df = picr_func, feature_table = ft_rel))
 
 genome_count_df <- do.call(cbind.data.frame, genome_count)
+
+#modify rownames
+genome_count_df <- genome_count_df %>%
+  rownames_to_column(var = "functions") %>%
+  mutate(functions = case_when(str_detect(functions, "NonSpecificHexoseSugar") ~ "Hexose",
+                               str_detect(functions, "GalacturonicAcid") ~ "Galacturonic Acid",
+                               str_detect(functions, "Non.SpecificAlcohols") ~ "Alcohol",
+                               str_detect(functions, "SulfateReduction") ~ "Sulfate Reduction",
+                               str_detect(functions, "FumarateReduction") ~ "Fumarate Reduction",
+                               str_detect(functions, "TetrathionateReduction") ~ "Tetrathionate Reduction",
+                               str_detect(functions, "DenitrificationNotETC") ~ "Denitrification (Not ETC)",
+                               str_detect(functions, "Alpha-galactans") ~ "Alpha-Galactans",
+                               str_detect(functions, "Beta-galactan") ~ "Beta-Galactan (Pectic Galactan)",
+                               str_detect(functions, "Mixed-Linkage glucans") ~ "Mixed-Linkage Glucans",
+                               str_detect(functions, "Beta-mannan") ~ "Beta-Mannan",
+                               str_detect(functions, "Alpha-mannan") ~ "Alpha-Mannan",
+                               str_detect(functions, "Rhamnose") ~ "Rhamnose Cleavage",
+                               str_detect(functions, "Arabinose") ~ "Arabinose Cleavage",
+                               functions == "Fucose" ~ "Fucose Cleavage",
+                               T ~ functions),
+         functions = str_remove(functions, "Degradation")) %>%
+  column_to_rownames(var = "functions")
 
 #dataframes for heatmap barplot annotations
 genomes_healthy <- genome_count_df %>%
@@ -458,26 +510,46 @@ ht_both
 
 
 ## Heatmap Scaled by Row, Clustered hclust complete
+genomes <- cbind(genomes_healthy, genomes_infected) %>%
+  rownames_to_column(var = "functions")
 
+polymers <- c("Arabinan", "Pectin", "Arabinose Cleavage", "Polyphenolics", "Xyloglucan",
+  "Amorphous Cellulose", "Xylans", "Mixed-Linkage Glucans", 
+  "Crystalline Cellulose", "Alpha-Galactans", "Chitin", 
+  "Beta-Galactan (Pectic Galactan)", "Alpha-Mannan", "Starch", 
+  "Fucose Cleavage", "Rhamnose Cleavage", "Sulf-Polysachharides", "Mucin",
+  "Beta-Mannan")
+cazy_g <- genomes[match(polymers, genomes$functions),] 
+rownames(cazy_g) <- cazy_g$functions
+cazy_g <- cazy_g %>%
+  select(-functions)
 
-genomes <- cbind(genomes_healthy, genomes_infected) 
+sugars <- c("Galactose", "Galacturonic Acid", "Lactose", "Hexose", "Fructose",
+            "Mannose", "Fucose", "Sucrose", "Xylose")
+sugar_g <- genomes[match(sugars, genomes$functions),] 
+rownames(sugar_g) <- sugar_g$functions
+sugar_g <- sugar_g %>%
+  select(-functions)
 
-cazy_g <- genomes[c(13, 11, 17,  1,  6,  3,  5,  4,  2, 14, 12, 15, 7, 10, 19, 
-                    18, 16,  9,  8),]
+scfas <- c("Acetate", "Butyrate", "Propionate", "Alcohol", "Lactate")
+scfa_g <- genomes[match(scfas, genomes$functions),] 
+rownames(scfa_g) <- scfa_g$functions
+scfa_g <- scfa_g %>%
+  select(-functions)
 
-sugar_g <- genomes[20:28,]
-sugar_g <- sugar_g[c(3, 5, 1, 6, 9, 4, 8, 2, 7),]
-
-scfa_g <- genomes[29:33, ]
-scfa_g <- scfa_g[c(3, 1, 2, 5, 4), ]
-
-resp_g <- genomes[34:40,]
-resp_g <- resp_g[c(6, 1, 2, 7, 3, 4, 5),]
+resp <- c("Denitrification (Not ETC)", "Sulfate Reduction", 
+          "Fumarate Reduction", "TMAO", "Aerobic", "Tetrathionate Reduction",
+          "Microaerophillic")
+resp_g <- genomes[match(resp, genomes$functions),] 
+rownames(resp_g) <- resp_g$functions
+resp_g <- resp_g %>%
+  select(-functions)
 
 genomes_reordered <- rbind(cazy_g, sugar_g, scfa_g, resp_g)
+index <- match(rownames(genomes_reordered), significance_df$functions)
 
-sig_df_reorderd <- significance_df[match(rownames(genomes_reordered),
-                                         significance_df$functions),] 
+sig_df_reorderd <- significance_df[index,] 
+
 rownames(sig_df_reorderd) <- NULL
 sig_df_reorderd <- sig_df_reorderd %>%
   column_to_rownames(var = "functions") %>%
