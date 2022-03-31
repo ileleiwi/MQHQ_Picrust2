@@ -94,6 +94,8 @@ for (i in names(anova_list)){
   }
 }
 
+anova(lm(relative_abundance ~ treatment, data = df[df$functions == "Polyphenolics",]))
+
 #dataframe of significance between treatments for each function
 significant_cat <- c()
 pval_cat <- c()

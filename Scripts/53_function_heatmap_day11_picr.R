@@ -14,6 +14,8 @@
 ## ---------------------------
 ##
 ## Notes: requires T/F function dataframe and feature_table from qiime2 and taxonomy from qiime2
+## 
+## Summed relative abundance of each ASV in each sample with given function normalized within each function
 ##   
 ##
 ## ---------------------------
@@ -229,7 +231,8 @@ samples_by_function_scaled <- t(scale(t(samples_by_function)))
 samples_by_function_scaled[is.nan(samples_by_function_scaled)] <- 0
 samples_by_function_scaled <- as.data.frame(samples_by_function_scaled)
 
-
+#order samples
+samples_by_function_scaled <- samples_by_function_scaled[,c(6,4,5,1,2,3)] 
 
 #write out for stats script
 samples_by_function_out <- samples_by_function %>%
@@ -263,7 +266,7 @@ treatment_by_function <- treatment_by_function %>%
 #Split dataframes by healthy and infected for plotting
 healthy <- samples_by_function_scaled %>%
   rownames_to_column(var = "functions") %>%
-  select(matches("LM|LO|LP|functions")) %>%
+  select(matches("LP|LO|LM|functions")) %>%
   arrange(match(functions, c("Polyphenolics", "Crystalline Cellulose","Amorphous Cellulose", 
                              "Mixed-Linkage Glucans","Xylans","Xyloglucan", "Alpha-Mannan", 
                              "Beta-Mannan", "Mucin", "Starch", "Pectin", "Chitin", "Arabinan",
@@ -470,13 +473,11 @@ ht_healthy <- Heatmap(as.matrix(healthy),
                       column_gap = unit(2, "mm"),
                       row_gap = unit(4, "mm"),
                       rect_gp = gpar(col = "black", lwd = 2),
-                      #row_names_gp = gpar(fontsize = 8), 
-                      #row_names_side = "right", 
-                      #row_title_side = "left",
-                      cluster_rows = FALSE,
-                      cluster_columns = FALSE,
+                      cluster_rows = TRUE,
+                      cluster_columns = TRUE,
                       cluster_column_slices = FALSE,
                       cluster_row_slices = FALSE,
+                      clustering_method_rows = "complete",
                       left_annotation = healthy_annotation)
 
 ht_infected <- Heatmap(as.matrix(infected),
@@ -496,15 +497,16 @@ ht_infected <- Heatmap(as.matrix(infected),
                        row_names_gp = gpar(fontsize = 8), 
                        row_names_side = "right", 
                        row_title_side = "right",
-                       cluster_rows = FALSE,
-                       cluster_columns = FALSE,
+                       cluster_rows = TRUE,
+                       cluster_columns = TRUE,
                        cluster_column_slices = FALSE,
                        cluster_row_slices = FALSE,
+                       clustering_method_rows = "complete",
                        left_annotation = infected_annotation)
 
 ht_both <- ht_healthy + ht_infected
 
-#pdf("polymer_heatmap_scaled_largest_to_smallest.pdf")
+#pdf("day11_polymer_heatmap_scaled_largest_to_smallest.pdf", width = 10, height = 10)
 ht_both
 #dev.off()
 
@@ -614,9 +616,9 @@ lgd_pvalue = Legend(title = "p-value", col_fun = pvalue_col_fun, at = c(0, 1, 2,
                     labels = c("1", "0.1", "0.01", "0.001"))
 lgd_sig = Legend(pch = "*", type = "points", labels = "< 0.05")
 
-#pdf("polymer_heatmap_clustered_significance.pdf")
-ht_both_clust
-draw(ht_both_clust, annotation_legend_list = list(lgd_pvalue, lgd_sig))
+#pdf("day11_polymer_heatmap_clustered_significance.pdf", width = 10, height = 10)
+#ht_both_clust
+#draw(ht_both_clust, annotation_legend_list = list(lgd_pvalue, lgd_sig))
 #dev.off()
 
 
