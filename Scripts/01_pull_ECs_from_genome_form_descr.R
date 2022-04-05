@@ -10,7 +10,7 @@ setwd(paste0("/Users/ikaialeleiwi/Desktop/Lab/Salmonella_NIH/Lactobacillus/",
 genome_form_cazy <- read_tsv("Data/genome_summary_form.tsv") %>%
   filter(header == "CAZY") 
 
-##Create df of dbCAN/EC matches fromm genome_form
+##Create df of dbCAN/EC matches from genome_form and unction heatmap form
 
 #extracts EC #'s from string and returns a list of matches
 PullStr <- function(string, type=1){
@@ -57,7 +57,7 @@ collapseVect <- function(char_vect){
 }
 
 #Create dataframe
-MakeCazyECdf <- function(){
+MakeCazyECdfGenomeForm <- function(){
   cazyid_EC <- data.frame(cazyid = character(),
                           EC = character())
   for (i in 1:nrow(genome_form_cazy)){
@@ -80,6 +80,7 @@ MakeCazyECdf <- function(){
   return(cazyid_EC)
 }
 
-cazyid_EC <- MakeCazyECdf()
+
+cazyid_EC <- MakeCazyECdfGenomeForm()
 
 write_tsv(cazyid_EC, "Clean_Data/cazyid_EC.tsv")
